@@ -595,7 +595,7 @@ class InlineParser(object):
             res = self.parseString(inlines)
         return res
 
-    def parseInlines(self, s, refmap = {}):
+    def parseInlines(self, s, refmap={}):
         self.subject = s
         self.pos = 0
         self.refmap = refmap
@@ -604,7 +604,7 @@ class InlineParser(object):
             pass
         return inlines
 
-    def parse(self, s, refmap = {}):
+    def parse(self, s, refmap={}):
         return self.parseInlines(s, refmap)
 
 
