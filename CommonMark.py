@@ -517,7 +517,7 @@ class InlineParser(object):
                 inlines.append(Block(t="Str", c="!"))
                 return 1
             elif (inlines[len(inlines) - 1] and
-                (inlines[len(inlines)-1].t == "Link")):
+                  inlines[len(inlines) - 1].t == "Link"):
                 inlines[len(inlines)-1].t = "Image"
                 return n+1
             else:
