@@ -240,7 +240,7 @@ class InlineParser(object):
 
     def scanDelims(self, c):
         numdelims = 0
-        first_close_delims = 0
+        # first_close_delims = 0
         char_before = char_after = None
         startpos = self.pos
 
@@ -420,7 +420,7 @@ class InlineParser(object):
         if n == 0:
             return 0
 
-        afterlabel = self.pos
+        # afterlabel = self.pos
         rawlabel = self.subject[startpos:n]
 
         if self.peek() == "(":
@@ -713,7 +713,7 @@ class DocParser:
     def addChild(self, tag, line_number, offset):
         while not (self.tip.t == "Document" or self.tip.t == "BlockQuote" or self.tip.t == "ListItem" or (self.tip.t == "List" and tag == "ListItem")):
             self.finalize(self.tip, line_number)
-        column_number = offset+1
+        # column_number = offset+1
         newBlock = Block.makeBlock(tag, line_number, offset)
         self.tip.children.append(newBlock)
         newBlock.parent = self.tip
