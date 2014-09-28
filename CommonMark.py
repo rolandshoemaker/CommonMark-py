@@ -9,14 +9,14 @@
 # renderer = CommonMark.HtmlRenderer()
 # print(renderer.render(parser.parse('Hello *world*')))
 
-
 import re
 
-#debug#
+
+# debug #
 def dump(obj):
-  for attr in dir(obj):
-    print("obj.%s = %s" % (attr, getattr(obj, attr)))
- #debug#
+    for attr in dir(obj):
+        print("obj.%s = %s" % (attr, getattr(obj, attr)))
+# debug #
 
 # Some of the regexps used in inline parser :<
 
@@ -69,8 +69,8 @@ def unescape(s):
     return re.sub(reAllEscapedChar, r"\g<1>", s)
 
 def isBlank(s):
-  """ Returns True if string contains only space characters."""
-  return bool(re.compile("^\s*$").match(s))
+    """ Returns True if string contains only space characters."""
+    return bool(re.compile("^\s*$").match(s))
 
 def normalizeReference(s):
     """ Normalize reference label: collapse internal whitespace to
@@ -92,7 +92,7 @@ def detabLine(text):
         return text
     else:
         def tabber(m):
-            result = "    "[(m.end()-1-tabber.lastStop)%4:]
+            result = "    "[(m.end() - 1 - tabber.lastStop) % 4:]
             tabber.lastStop = m.end()
             return result
         tabber.lastStop = 0
@@ -103,7 +103,7 @@ def detabLine(text):
 class Block(object):
 
     @staticmethod
-    def makeBlock(tag,start_line, start_column):
+    def makeBlock(tag, start_line, start_column):
         # self.t =  tag
         # self.isOpen =  true
         # self.last_line_blank =  false
@@ -154,7 +154,7 @@ class InlineParser(object):
         self.refmap = {}
 
     def match(self, regexString, reCompileFlags=0):
-        #regex = re.compile(regexString, flags=reCompileFlags)
+        # regex = re.compile(regexString, flags=reCompileFlags)
         match = re.search(regexString, self.subject[self.pos:], flags=reCompileFlags)
         if match:
             self.pos += match.end()
@@ -206,7 +206,7 @@ class InlineParser(object):
                 self.pos += 2
                 return 2
             else:
-                self.pos +=1
+                self.pos += 1
                 inlines.append(Block(t="Str", c="\\"))
                 return 1
         else:
@@ -251,8 +251,8 @@ class InlineParser(object):
         a = self.peek()
         char_after = a if a else "\\n"
 
-        can_open = (numdelims > 0) and (numdelims <=3) and (not re.match("\s", char_after))
-        can_close = (numdelims > 0) and (numdelims <=3) and (not re.match("\s", char_before))
+        can_open = (numdelims > 0) and (numdelims <= 3) and (not re.match("\s", char_after))
+        can_close = (numdelims > 0) and (numdelims <= 3) and (not re.match("\s", char_before))
 
         if (c == "_"):
             can_open = can_open and (not re.match("[a-z0-9]", char_before, re.IGNORECASE))
@@ -462,9 +462,9 @@ class InlineParser(object):
             link = None
         if link:
             if link.get("title", None):
-                 title = link['title']
+                title = link['title']
             else:
-                 title = ""
+                title = ""
             if link.get("destination", None):
                 destination = link['destination']
             else:
@@ -617,15 +617,15 @@ class DocParser:
         self.inlineParser = InlineParser()
 
     def dumpAST(self, obj, ind=0):
-        #for attr in dir(obj):
-        #    print("obj.%s = %s" % (attr, getattr(obj, attr)))
+        # for attr in dir(obj):
+        #     print("obj.%s = %s" % (attr, getattr(obj, attr)))
         indChar = ("\t"*ind)+"-> " if ind else ""
         print(indChar+"["+obj.t+"]")
         if not obj.title == "": print("\t"+indChar+"Title: "+obj.title)
-        #if not obj.c == "": print("\t"+indChar+"c: "+obj.c)
+        # if not obj.c == "": print("\t"+indChar+"c: "+obj.c)
         if not obj.info == "": print("\t"+indChar+"Info: "+obj.info)
         if not obj.destination == "": print("\t"+indChar+"Destination: "+obj.destination)
-        #if obj.label: print("\t"+indChar+"Label: "+", ".join(obj.label))
+        # if obj.label: print("\t"+indChar+"Label: "+", ".join(obj.label))
         if obj.isOpen: print("\t"+indChar+"Open: "+str(obj.isOpen))
         if obj.last_line_blank: print("\t"+indChar+"Last line blank: "+str(obj.last_line_blank))
         if obj.start_line: print("\t"+indChar+"Start line: "+str(obj.start_line))
@@ -691,7 +691,7 @@ class DocParser:
     def addLine(self, ln, offset):
         s = ln[offset:]
         if not self.tip.isOpen:
-            raise Exception("Attempted to add line (" + ln + ") to closed container." )
+            raise Exception("Attempted to add line (" + ln + ") to closed container.")
         self.tip.strings.append(s)
 
     def addChild(self, tag, line_number, offset):
@@ -754,7 +754,7 @@ class DocParser:
 
         ln = detabLine(ln)
 
-        #self.dumpAST(container)
+        # self.dumpAST(container)
 
         while len(container.children) > 0:
             last_child = container.children[len(container.children)-1]
@@ -997,7 +997,7 @@ class DocParser:
         else:
             pass
 
-        self.tip = block.parent #or self.tip #or self.top
+        self.tip = block.parent # or self.tip # or self.top
 
 
     def processInlines(self, block):
@@ -1026,17 +1026,17 @@ class HTMLRenderer(object):
     blocksep = "\n"
     innersep = "\n"
     softbreak = "\n"
-    escape_pairs = (("[&]",'&amp;'),
-            ("[<]", '&lt;'),
-            ("[>]", '&gt;'),
-            ('["]', '&quot;'))
+    escape_pairs = (("[&]", '&amp;'),
+                    ("[<]", '&lt;'),
+                    ("[>]", '&gt;'),
+                    ('["]', '&quot;'))
 
     @staticmethod
     def inTags(tag, attribs, contents, selfclosing=None):
         result = "<" + tag
         if (len(attribs) > 0):
             i = 0
-            #attrib = attribs[i]
+            # attrib = attribs[i]
             while (len(attribs) > i) and (not attribs[i] == None):
                 attrib = attribs[i]
                 result += (" " + attrib[0] + '="' + attrib[1] + '"')
@@ -1141,7 +1141,7 @@ class HTMLRenderer(object):
             if ((len(info_words) == 0) or (len(info_words[0]) == 0)):
                 attr = []
             else:
-                arg = [['class','language-' + self.escape(info_words[0],True)]]
+                arg = [['class', 'language-' + self.escape(info_words[0], True)]]
             attr = [] if len(info_words) == 0 else [["class", "language-"+self.escape(info_words[0], True)]]
             return self.inTags('pre', [], self.inTags('code', attr, self.escape(block.string_content)))
         elif (block.t == "HtmlBlock"):
@@ -1163,4 +1163,3 @@ class HTMLRenderer(object):
 
     def render(self,  block, in_tight_list=None):
         return self.renderBlock(block, in_tight_list)
-
