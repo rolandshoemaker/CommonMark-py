@@ -62,20 +62,23 @@ reHrule = re.compile(r"^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$")
 # or a string of non-special characters.
 reMain = r"^(?:[\n`\[\]\\!<&*_]|[^\n`\[\]\\!<&*_]+)"
 
-# Utility functions
 
+# Utility functions
 def unescape(s):
     """ Replace backslash escapes with literal characters."""
     return re.sub(reAllEscapedChar, r"\g<1>", s)
+
 
 def isBlank(s):
     """ Returns True if string contains only space characters."""
     return bool(re.compile("^\s*$").match(s))
 
+
 def normalizeReference(s):
     """ Normalize reference label: collapse internal whitespace to
      single space, remove leading/trailing whitespace, case fold."""
     return re.sub(r'\s+', ' ', s.strip()).upper()
+
 
 def matchAt(pattern, s, offset):
     """ Attempt to match a regex in string s at offset offset.
@@ -85,6 +88,7 @@ def matchAt(pattern, s, offset):
         return offset+s[offset:].index(matched.group(0))
     else:
         return None
+
 
 def detabLine(text):
     """ Convert tabs to spaces on each line using a 4-space tab stop."""
@@ -101,7 +105,6 @@ def detabLine(text):
 
 
 class Block(object):
-
     @staticmethod
     def makeBlock(tag, start_line, start_column):
         # self.t =  tag
@@ -191,7 +194,6 @@ class InlineParser(object):
         inlines.append(Block(t="Str", c=ticks))
         self.pos = afterOpenTicks
         return (self.pos - startpos)
-
 
     def parseEscaped(self, inlines):
         subj = self.subject
@@ -477,7 +479,6 @@ class InlineParser(object):
         self.pos = startpos
         return 0
 
-
     def parseEntity(self, inlines):
         m = self.match(r"^&(?:#x[a-f0-9]{1,8}|#[0-9]{1,8}|[a-z][a-z0-9]{1,31});", re.IGNORECASE)
         if m:
@@ -606,8 +607,8 @@ class InlineParser(object):
     def parse(self, s, refmap = {}):
         return self.parseInlines(s, refmap)
 
-class DocParser:
 
+class DocParser:
     def __init__(self, subject=None, pos=0):
         self.doc = Block.makeBlock("Document", 1, 1)
         self.subject = subject
@@ -687,7 +688,6 @@ class DocParser:
             self.finalize(last_list, line_number)
             self.tip = last_list.parent
 
-
     def addLine(self, ln, offset):
         s = ln[offset:]
         if not self.tip.isOpen:
@@ -740,7 +740,6 @@ class DocParser:
             elif match2:
                 data['padding'] = len(match2.group(0))
         return data
-
 
     def incorporateLine(self, ln, line_number):
         all_matched = True
@@ -941,8 +940,6 @@ class DocParser:
                 else:
                     print("Line "+str(line_number)+" with container type "+container.t+" did not match any condition.")
 
-
-
     def finalize(self, block, line_number):
         if (not block.isOpen):
             return 0
@@ -999,7 +996,6 @@ class DocParser:
 
         self.tip = block.parent # or self.tip # or self.top
 
-
     def processInlines(self, block):
         if block.t == "ATXHeader" or block.t == "Paragraph" or block.t == "SetextHeader":
             block.inline_content = self.inlineParser.parse(block.string_content.strip(), self.refmap)
@@ -1021,6 +1017,7 @@ class DocParser:
             self.finalize(self.tip, length-1)
         self.processInlines(self.doc)
         return self.doc
+
 
 class HTMLRenderer(object):
     blocksep = "\n"
