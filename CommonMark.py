@@ -377,7 +377,7 @@ class InlineParser(object):
             return 0
         self.pos += 1
         c = self.peek()
-        while ((not c == "]") or (nest_level > 0)) and c is not None: # and (c = self.peek()):
+        while ((not c == "]") or (nest_level > 0)) and c is not None:
             if c == "`":
                 self.parseBackticks([])
                 break
@@ -831,7 +831,7 @@ class DocParser:
                 break
         last_matched_container = container
 
-        def closeUnmatchedBlocks(self, already_done, oldtip): # , mythis):
+        def closeUnmatchedBlocks(self, already_done, oldtip):
             while not already_done and not oldtip == last_matched_container:
                 self.finalize(oldtip, line_number)
                 oldtip = oldtip.parent
@@ -1010,7 +1010,7 @@ class DocParser:
         else:
             pass
 
-        self.tip = block.parent # or self.tip # or self.top
+        self.tip = block.parent  # or self.tip # or self.top
 
     def processInlines(self, block):
         if block.t == "ATXHeader" or block.t == "Paragraph" or block.t == "SetextHeader":
