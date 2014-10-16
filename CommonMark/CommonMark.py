@@ -1234,8 +1234,8 @@ class HTMLRenderer(object):
             result += ('></' + tag + '>')
         return result
 
-    def __init__(self):
-        pass
+    def __init__(self, highlight_syntax=None):
+        self.highlight_syntax = highlight_syntax
 
     def URLescape(self, s):
         """ Escape href URLs."""
@@ -1292,7 +1292,9 @@ class HTMLRenderer(object):
                 attrs.append(['title', self.escape(inline.title, True)])
             return self.inTags('img', attrs, "", True)
         elif inline.t == "Code":
-            return self.inTags('code', [], self.escape(inline.c))
+            return self.inTags('code', [], self.escape(inline.c)
+                               if self.highlight_syntax is None
+                               else self.highlight_syntax(inline.t, inline.c, None))
         else:
             warn("Unknown inline type " + inline.t)
             return ""
@@ -1348,7 +1350,9 @@ class HTMLRenderer(object):
                                self.renderInlines(block.inline_content))
         elif (block.t == "IndentedCode"):
             return HTMLRenderer.inTags('pre', [], HTMLRenderer.inTags('code',
-                                       [], self.escape(block.string_content)))
+                                       [], self.escape(block.string_content)
+                                       if self.highlight_syntax is None
+                                       else self.highlight_syntax(block.t, block.string_content, None)))
         elif (block.t == "FencedCode"):
             info_words = []
             if block.info:
@@ -1356,7 +1360,9 @@ class HTMLRenderer(object):
             attr = [] if len(info_words) == 0 else [
                 ["class", "language-" + self.escape(info_words[0], True)]]
             return self.inTags('pre', [], self.inTags('code',
-                               attr, self.escape(block.string_content)))
+                               attr, self.escape(block.string_content)
+                               if self.highlight_syntax is None
+                               else self.highlight_syntax(block.t, block.string_content, info_words)))
         elif (block.t == "HtmlBlock"):
             return block.string_content
         elif (block.t == "ReferenceDef"):
