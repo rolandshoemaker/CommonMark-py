@@ -137,7 +137,7 @@ def dumpAST(obj, ind=0):
     if obj.end_line:
         print("\t" + indChar + "End line: " + str(obj.end_line))
     if not obj.string_content == "":
-         print("\t" + indChar + "String content: " + obj.string_content)
+        print("\t" + indChar + "String content: " + obj.string_content)
     if not obj.info == "":
         print("\t" + indChar + "Info: " + obj.info)
     if len(obj.strings) > 0:
