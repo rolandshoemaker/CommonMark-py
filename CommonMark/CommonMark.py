@@ -8,8 +8,12 @@
 # parser = CommonMark.DocParser()
 # renderer = CommonMark.HtmlRenderer()
 # print(renderer.render(parser.parse('Hello *world*')))
-import re, sys, argparse, json
+from __future__ import absolute_import
+import re
+import sys
+import json
 from warnings import warn
+from CommonMark import common
 
 # if python3 use html.parser and urllib.parse, else use HTMLParser and urllib
 if sys.version_info >= (3, 0):
@@ -24,57 +28,29 @@ if sys.version_info >= (3, 0):
     HTMLunquote = urllib.parse.unquote
     URLparse = urllib.parse.urlparse
 else:
-    import urllib, urlparse
-    import entitytrans
+    import urllib
+    import urlparse
+    from CommonMark import entitytrans
     HTMLunescape = entitytrans._unescape
     HTMLquote = urllib.quote
     HTMLunquote = urllib.unquote
     URLparse = urlparse.urlparse
 
-# Some of the regexps used in inline parser :<
-
-ESCAPABLE = '[!"#$%&\'()*+,./:;<=>?@[\\\\\\]^_`{|}~-]'
-ESCAPED_CHAR = '\\\\' + ESCAPABLE
-IN_DOUBLE_QUOTES = '"(' + ESCAPED_CHAR + '|[^"\\x00])*"'
-IN_SINGLE_QUOTES = '\'(' + ESCAPED_CHAR + '|[^\'\\x00])*\''
-IN_PARENS = '\\((' + ESCAPED_CHAR + '|[^)\\x00])*\\)'
-REG_CHAR = '[^\\\\()\\x00-\\x20]'
-IN_PARENS_NOSP = '\\((' + REG_CHAR + '|' + ESCAPED_CHAR + ')*\\)'
-TAGNAME = '[A-Za-z][A-Za-z0-9]*'
-BLOCKTAGNAME = '(?:article|header|aside|hgroup|iframe|blockquote|hr|body|li|map|button|object|canvas|ol|caption|output|col|p|colgroup|pre|dd|progress|div|section|dl|table|td|dt|tbody|embed|textarea|fieldset|tfoot|figcaption|th|figure|thead|footer|footer|tr|form|ul|h1|h2|h3|h4|h5|h6|video|script|style)'
-ATTRIBUTENAME = '[a-zA-Z_:][a-zA-Z0-9:._-]*'
-UNQUOTEDVALUE = "[^\"'=<>`\\x00-\\x20]+"
-SINGLEQUOTEDVALUE = "'[^']*'"
-DOUBLEQUOTEDVALUE = '"[^"]*"'
-ATTRIBUTEVALUE = "(?:" + UNQUOTEDVALUE + "|" + \
-    SINGLEQUOTEDVALUE + "|" + DOUBLEQUOTEDVALUE + ")"
-ATTRIBUTEVALUESPEC = "(?:" + "\\s*=" + "\\s*" + ATTRIBUTEVALUE + ")"
-ATTRIBUTE = "(?:" + "\\s+" + ATTRIBUTENAME + ATTRIBUTEVALUESPEC + "?)"
-OPENTAG = "<" + TAGNAME + ATTRIBUTE + "*" + "\\s*/?>"
-CLOSETAG = "</" + TAGNAME + "\\s*[>]"
-OPENBLOCKTAG = "<" + BLOCKTAGNAME + ATTRIBUTE + "*" + "\\s*/?>"
-CLOSEBLOCKTAG = "</" + BLOCKTAGNAME + "\\s*[>]"
-HTMLCOMMENT = "<!--([^-]+|[-][^-]+)*-->"
-PROCESSINGINSTRUCTION = "[<][?].*?[?][>]"
-DECLARATION = "<![A-Z]+" + "\\s+[^>]*>"
-CDATA = "<!\\[CDATA\\[([^\\]]+|\\][^\\]]|\\]\\][^>])*\\]\\]>"
-HTMLTAG = "(?:" + OPENTAG + "|" + CLOSETAG + "|" + HTMLCOMMENT + \
-    "|" + PROCESSINGINSTRUCTION + "|" + DECLARATION + "|" + CDATA + ")"
-HTMLBLOCKOPEN = "<(?:" + BLOCKTAGNAME + \
-    "[\\s/>]" + "|" + "/" + \
-    BLOCKTAGNAME + "[\\s>]" + "|" + "[?!])"
-
-reHtmlTag = re.compile('^' + HTMLTAG, re.IGNORECASE)
-reHtmlBlockOpen = re.compile('^' + HTMLBLOCKOPEN, re.IGNORECASE)
+reHtmlTag = re.compile('^' + common.HTMLTAG, re.IGNORECASE)
+reHtmlBlockOpen = re.compile('^' + common.HTMLBLOCKOPEN, re.IGNORECASE)
 reLinkTitle = re.compile(
-    '^(?:"(' + ESCAPED_CHAR + '|[^"\\x00])*"' + '|' + '\'(' + ESCAPED_CHAR + '|[^\'\\x00])*\'' + '|' + '\\((' + ESCAPED_CHAR + '|[^)\\x00])*\\))')
+    '^(?:"(' + common.ESCAPED_CHAR + '|[^"\\x00])*"' + '|' + '\'(' +
+    common.ESCAPED_CHAR + '|[^\'\\x00])*\'' + '|' + '\\((' +
+    common.ESCAPED_CHAR + '|[^)\\x00])*\\))')
 reLinkDestinationBraces = re.compile(
-    '^(?:[<](?:[^<>\\n\\\\\\x00]' + '|' + ESCAPED_CHAR + '|' + '\\\\)*[>])')
+    '^(?:[<](?:[^<>\\n\\\\\\x00]' + '|' + common.ESCAPED_CHAR + '|' +
+    '\\\\)*[>])')
 reLinkDestination = re.compile(
-    '^(?:' + REG_CHAR + '+|' + ESCAPED_CHAR + '|' + IN_PARENS_NOSP + ')*')
-reEscapable = re.compile(ESCAPABLE)
-reAllEscapedChar = '\\\\(' + ESCAPABLE + ')'
-reEscapedChar = re.compile('^\\\\(' + ESCAPABLE + ')')
+    '^(?:' + common.REG_CHAR + '+|' + common.ESCAPED_CHAR + '|' +
+    common.IN_PARENS_NOSP + ')*')
+reEscapable = re.compile(common.ESCAPABLE)
+reAllEscapedChar = '\\\\(' + common.ESCAPABLE + ')'
+reEscapedChar = re.compile('^\\\\(' + common.ESCAPABLE + ')')
 reAllTab = re.compile("\t")
 reHrule = re.compile(r"^(?:(?:\* *){3,}|(?:_ *){3,}|(?:- *){3,}) *$")
 
@@ -84,10 +60,12 @@ reMain = r"^(?:[\n`\[\]\\!<&*_]|[^\n`\[\]\\!<&*_]+)"
 
 # Utility functions
 
+
 def ASTtoJSON(block):
     """ Output AST in JSON form, this is destructive of block."""
     def prepare(block):
-        """ Strips circular 'parent' references and trims empty block elements."""
+        """ Strips circular 'parent' references and trims empty
+        block elements."""
         if block.parent:
             block.parent = None
         if not block.__dict__['isOpen'] is None:
@@ -95,23 +73,28 @@ def ASTtoJSON(block):
             del(block.isOpen)
         # trim empty elements...
         for attr in dir(block):
-            if not callable(attr) and not attr.startswith("__") and not attr == "makeBlock":
+            if not callable(attr) and not attr.startswith("__") and \
+               attr != "makeBlock" and attr != "pretty":
                 if block.__dict__[attr] in ["", [], None, {}]:
                     del(block.__dict__[attr])
         if 'children' in block.__dict__ and len(block.children) > 0:
             for i, child in enumerate(block.children):
                 block.children[i] = prepare(child)
-        if 'inline_content' in block.__dict__ and len(block.inline_content) > 0:
+        if 'inline_content' in block.__dict__ and \
+           len(block.inline_content) > 0:
             for i, child in enumerate(block.inline_content):
                 block.inline_content[i] = prepare(child)
         if 'label' in block.__dict__ and len(block.label) > 0:
             for i, child in enumerate(block.label):
                 block.label[i] = prepare(child)
-        if 'c' in block.__dict__  and type(block.c) is list and len(block.c) > 0:
+        if 'c' in block.__dict__ and type(block.c) is list and \
+           len(block.c) > 0:
             for i, child in enumerate(block.c):
                 block.c[i] = prepare(child)
         return block
-    return json.dumps(prepare(block), default=lambda o: o.__dict__) # sort_keys=True) # indent=4)
+    # sort_keys=True) # indent=4)
+    return json.dumps(prepare(block), default=lambda o: o.__dict__)
+
 
 def dumpAST(obj, ind=0):
     """ Print out a block/entire AST."""
@@ -139,7 +122,8 @@ def dumpAST(obj, ind=0):
     if not obj.info == "":
         print("\t" + indChar + "Info: " + obj.info)
     if len(obj.strings) > 0:
-        print("\t" + indChar + "Strings: ['" + "', '".join(obj.strings) + "'']")
+        print("\t" + indChar + "Strings: ['" + "', '".join(obj.strings) +
+              "'']")
     if obj.c:
         if type(obj.c) is list:
             print("\t" + indChar + "c:")
@@ -156,18 +140,21 @@ def dumpAST(obj, ind=0):
         print("\t\t" + indChar + "[type] = " + obj.list_data['type'])
         if hasattr(obj.list_data, "bullet_char"):
             print(
-                "\t\t" + indChar + "[bullet_char] = " + obj.list_data['bullet_char'])
+                "\t\t" + indChar + "[bullet_char] = " +
+                obj.list_data['bullet_char'])
         if hasattr(obj.list_data, "start"):
             print("\t\t" + indChar + "[start] = " + obj.list_data['start'])
         if hasattr(obj.list_data, "delimiter"):
             print(
-                "\t\t" + indChar + "[delimiter] = " + obj.list_data['delimiter'])
+                "\t\t" + indChar + "[delimiter] = " +
+                obj.list_data['delimiter'])
         if hasattr(obj.list_data, "padding"):
             print(
                 "\t\t" + indChar + "[padding] = " + obj.list_data['padding'])
         if hasattr(obj.list_data, "marker_offset"):
             print(
-                "\t\t" + indChar + "[marker_offset] = " + obj.list_data['marker_offset'])
+                "\t\t" + indChar + "[marker_offset] = " +
+                obj.list_data['marker_offset'])
     if len(obj.inline_content) > 0:
         print("\t" + indChar + "Inline content:")
         for b in obj.inline_content:
@@ -176,6 +163,11 @@ def dumpAST(obj, ind=0):
         print("\t" + indChar + "Children:")
         for b in obj.children:
             dumpAST(b, ind + 2)
+    if len(obj.attributes):
+        print("\t" + indChar + "Attributes:")
+        for key, val in obj.attributes.iteritems():
+            print("\t\t" + indChar + "[{0}] = {1}".format(key, val))
+
 
 def unescape(s):
     """ Replace backslash escapes with literal characters."""
@@ -223,7 +215,8 @@ class Block(object):
     def makeBlock(tag, start_line, start_column):
         return Block(t=tag, start_line=start_line, start_column=start_column)
 
-    def __init__(self, t="", c="", destination="", label="", start_line="", start_column="", title=""):
+    def __init__(self, t="", c="", destination="", label="",
+                 start_line="", start_column="", title=""):
         self.t = t
         self.c = c
         self.destination = destination
@@ -242,6 +235,19 @@ class Block(object):
         self.title = title
         self.info = ""
         self.tight = bool()
+        self.attributes = {}
+
+    def __repr__(self):
+        return "Block {t} [{start}:{end}]".format(
+            t=self.t,
+            start=self.start_line,
+            end=self.end_line,
+            )
+
+    def pretty(self):
+        from pprint import pprint
+        pprint(self.__dict__)
+
 
 class InlineParser(object):
 
@@ -280,7 +286,8 @@ class InlineParser(object):
             return None
 
     def spnl(self):
-        """ Parse zero or more space characters, including at most one newline."""
+        """ Parse zero or more space characters, including at
+        most one newline."""
         self.match(r"^ *(?:\n *)?")
         return 1
 
@@ -299,7 +306,7 @@ class InlineParser(object):
         afterOpenTicks = self.pos
         foundCode = False
         match = self.match(r"`+", re.MULTILINE)
-        while (not foundCode) and (not match is None):
+        while (not foundCode) and (match is not None):
             if (match == ticks):
                 c = self.subject[afterOpenTicks:(self.pos - len(ticks))]
                 c = re.sub(r"[ \n]+", ' ', c)
@@ -312,9 +319,9 @@ class InlineParser(object):
         return (self.pos - startpos)
 
     def parseEscaped(self, inlines):
-        """ Parse a backslash-escaped special character, adding either the escaped
-        character, a hard line break (if the backslash is followed by a newline),
-        or a literal backslash to the 'inlines' list."""
+        """ Parse a backslash-escaped special character, adding either the
+        escaped character, a hard line break (if the backslash is followed
+        by a newline), or a literal backslash to the 'inlines' list."""
         subj = self.subject
         pos = self.pos
         if (subj[pos] == "\\"):
@@ -336,20 +343,45 @@ class InlineParser(object):
     def parseAutoLink(self, inlines):
         """ Attempt to parse an autolink (URL or email in pointy brackets)."""
         m = self.match(
-            "^<([a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)>")
+            "^<([a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9]" +
+            "(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9]" +
+            "(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*)>")
         m2 = self.match(
-            "^<(?:coap|doi|javascript|aaa|aaas|about|acap|cap|cid|crid|data|dav|dict|dns|file|ftp|geo|go|gopher|h323|http|https|iax|icap|im|imap|info|ipp|iris|iris.beep|iris.xpc|iris.xpcs|iris.lwz|ldap|mailto|mid|msrp|msrps|mtqp|mupdate|news|nfs|ni|nih|nntp|opaquelocktoken|pop|pres|rtsp|service|session|shttp|sieve|sip|sips|sms|snmp|soap.beep|soap.beeps|tag|tel|telnet|tftp|thismessage|tn3270|tip|tv|urn|vemmi|ws|wss|xcon|xcon-userid|xmlrpc.beep|xmlrpc.beeps|xmpp|z39.50r|z39.50s|adiumxtra|afp|afs|aim|apt|attachment|aw|beshare|bitcoin|bolo|callto|chrome|chrome-extension|com-eventbrite-attendee|content|cvs|dlna-playsingle|dlna-playcontainer|dtn|dvb|ed2k|facetime|feed|finger|fish|gg|git|gizmoproject|gtalk|hcp|icon|ipn|irc|irc6|ircs|itms|jar|jms|keyparc|lastfm|ldaps|magnet|maps|market|message|mms|ms-help|msnim|mumble|mvn|notes|oid|palm|paparazzi|platform|proxy|psyc|query|res|resource|rmi|rsync|rtmp|secondlife|sftp|sgn|skype|smb|soldat|spotify|ssh|steam|svn|teamspeak|things|udp|unreal|ut2004|ventrilo|view-source|webcal|wtai|wyciwyg|xfire|xri|ymsgr):[^<>\x00-\x20]*>", re.IGNORECASE)
+            "^<(?:coap|doi|javascript|aaa|aaas|about|acap|cap|cid|crid|" +
+            "data|dav|dict|dns|file|ftp|geo|go|gopher|h323|http|https|" +
+            "iax|icap|im|imap|info|ipp|iris|iris.beep|iris.xpc|" +
+            "iris.xpcs|iris.lwz|ldap|mailto|mid|msrp|msrps|mtqp|mupdate|" +
+            "news|nfs|ni|nih|nntp|opaquelocktoken|pop|pres|rtsp|service|" +
+            "session|shttp|sieve|sip|sips|sms|snmp|soap.beep|soap.beeps|" +
+            "tag|tel|telnet|tftp|thismessage|tn3270|tip|tv|urn|vemmi|ws|" +
+            "wss|xcon|xcon-userid|xmlrpc.beep|xmlrpc.beeps|xmpp|z39.50r|" +
+            "z39.50s|adiumxtra|afp|afs|aim|apt|attachment|aw|beshare|" +
+            "bitcoin|bolo|callto|chrome|chrome-extension|" +
+            "com-eventbrite-attendee|content|cvs|dlna-playsingle|" +
+            "dlna-playcontainer|dtn|dvb|ed2k|facetime|feed|finger|fish|" +
+            "gg|git|gizmoproject|gtalk|hcp|icon|ipn|irc|irc6|ircs|itms|" +
+            "jar|jms|keyparc|lastfm|ldaps|magnet|maps|market|message|" +
+            "mms|ms-help|msnim|mumble|mvn|notes|oid|palm|paparazzi|" +
+            "platform|proxy|psyc|query|res|resource|rmi|rsync|rtmp|" +
+            "secondlife|sftp|sgn|skype|smb|soldat|spotify|ssh|steam|" +
+            "svn|teamspeak|things|udp|unreal|ut2004|ventrilo|" +
+            "view-source|webcal|wtai|wyciwyg|xfire|" +
+            "xri|ymsgr):[^<>\x00-\x20]*>", re.IGNORECASE)
         if m:
             # email
             dest = m[1:-1]
             inlines.append(
-                Block(t="Link", label=[Block(t="Str", c=dest)], destination="mailto:" + dest))
+                Block(t="Link",
+                      label=[Block(t="Str", c=dest)],
+                      destination="mailto:" + dest))
             return len(m)
         elif m2:
             # link
             dest2 = m2[1:-1]
             inlines.append(
-                Block(t="Link", label=[Block(t="Str", c=dest2)], destination=dest2))
+                Block(t="Link",
+                      label=[Block(t="Str", c=dest2)],
+                      destination=dest2))
             return len(m2)
         else:
             return 0
@@ -369,7 +401,6 @@ class InlineParser(object):
         they can open and/or close emphasis or strong emphasis.  A utility
         function for strong/emph parsing."""
         numdelims = 0
-        first_close_delims = 0
         char_before = char_after = None
         startpos = self.pos
 
@@ -415,7 +446,9 @@ class InlineParser(object):
         self.pos += numdelims
         if startpos > 0:
             inlines.append(
-                Block(t="Str", c=self.subject[self.pos - numdelims:numdelims + startpos]))
+                Block(
+                    t="Str",
+                    c=self.subject[self.pos - numdelims:numdelims + startpos]))
         else:
             inlines.append(
                 Block(t="Str", c=self.subject[self.pos - numdelims:numdelims]))
@@ -459,7 +492,9 @@ class InlineParser(object):
         elif (numdelims == 3):
             while (True):
                 res = self.scanDelims(c)
-                if (res["numdelims"] >= 1 and res["numdelims"] <= 3 and res["can_close"] and not res["numdelims"] == first_close_delims):
+                if (res["numdelims"] >= 1 and res["numdelims"] <= 3 and
+                        res["can_close"] and
+                        res["numdelims"] != first_close_delims):
                     if first_close_delims == 1 and numdelims > 2:
                         res["numdelims"] = 2
                     elif first_close_delims == 2:
@@ -469,18 +504,25 @@ class InlineParser(object):
                     self.pos += res['numdelims']
 
                     if first_close > 0:
-                        inlines[
-                            delimpos].t = "Strong" if first_close_delims == 1 else "Emph"
+                        if first_close_delims == 1:
+                            inlines[delimpos].t = "Strong"
+                        else:
+                            inlines[delimpos].t = "Emph"
                         temp = "Emph" if first_close_delims == 1 else "Strong"
-                        inlines[delimpos].c = [Block(t=temp, c=inlines[delimpos + 1:first_close])] + inlines[
-                            first_close + 1:]  # error on 362?
+                        inlines[delimpos].c = [Block(
+                            t=temp,
+                            c=inlines[delimpos + 1:first_close])] + \
+                            inlines[first_close + 1:]  # error on 362?
                         if len(inlines) > 1:
                             for x in range(delimpos + 1, len(inlines)):
                                 inlines.pop(len(inlines) - 1)
                         break
                     else:
                         inlines.append(
-                            Block(t="Str", c=self.subject[self.pos - res["numdelims"]:self.pos]))
+                            Block(
+                                t="Str",
+                                c=self.subject[
+                                    self.pos - res["numdelims"]:self.pos]))
                         first_close = len(inlines) - 1
                         first_close_delims = res["numdelims"]
                 else:
@@ -505,17 +547,18 @@ class InlineParser(object):
         """ Attempt to parse link destination, returning the string or
         null if no match."""
         res = self.match(reLinkDestinationBraces)
-        if not res is None:
+        if res is not None:
             return unescape(res[1:len(res) - 1])
         else:
             res2 = self.match(reLinkDestination)
-            if not res2 is None:
+            if res2 is not None:
                 return unescape(res2)
             else:
                 return None
 
     def parseLinkLabel(self):
-        """ Attempt to parse a link label, returning number of characters parsed."""
+        """ Attempt to parse a link label, returning number of
+        characters parsed."""
         if not self.peek() == "[":
             return 0
         startpos = self.pos
@@ -525,7 +568,7 @@ class InlineParser(object):
             return 0
         self.pos += 1
         c = self.peek()
-        while ((not c == "]") or (nest_level > 0)) and not c is None:
+        while ((not c == "]") or (nest_level > 0)) and c is not None:
             if c == "`":
                 self.parseBackticks([])
             elif c == "<":
@@ -566,21 +609,24 @@ class InlineParser(object):
         if n == 0:
             return 0
 
-        afterlabel = self.pos
         rawlabel = self.subject[startpos:n+startpos]
 
         if self.peek() == "(":
             self.pos += 1
             if self.spnl():
                 dest = self.parseLinkDestination()
-                if not dest is None and self.spnl():
+                if dest is not None and self.spnl():
                     if re.match(r"^\s", self.subject[self.pos - 1]):
                         title = self.parseLinkTitle()
                     else:
                         title = ""
                     if self.spnl() and self.match(r"^\)"):
                         inlines.append(
-                            Block(t="Link", destination=dest, title=title, label=self.parseRawLabel(rawlabel)))
+                            Block(
+                                t="Link",
+                                destination=dest,
+                                title=title,
+                                label=self.parseRawLabel(rawlabel)))
                         return self.pos - startpos
                     else:
                         self.pos = startpos
@@ -617,7 +663,11 @@ class InlineParser(object):
             else:
                 destination = ""
             inlines.append(
-                Block(t="Link", destination=destination, title=title, label=self.parseRawLabel(rawlabel)))
+                Block(
+                    t="Link",
+                    destination=destination,
+                    title=title,
+                    label=self.parseRawLabel(rawlabel)))
             return self.pos - startpos
         else:
             self.pos = startpos
@@ -628,7 +678,8 @@ class InlineParser(object):
     def parseEntity(self, inlines):
         """ Attempt to parse an entity, adding to inlines if successful."""
         m = self.match(
-            r"^&(?:#x[a-f0-9]{1,8}|#[0-9]{1,8}|[a-z][a-z0-9]{1,31});", re.IGNORECASE)
+            r"^&(?:#x[a-f0-9]{1,8}|#[0-9]{1,8}|[a-z][a-z0-9]{1,31});",
+            re.IGNORECASE)
         if m:
             inlines.append(Block(t="Entity", c=m))
             return len(m)
@@ -683,6 +734,8 @@ class InlineParser(object):
         """ Attempt to parse a link reference, modifying refmap."""
         self.subject = s
         self.pos = 0
+        self.label_nest_level = 0
+
         startpos = self.pos
 
         matchChars = self.parseLinkLabel()
@@ -747,7 +800,8 @@ class InlineParser(object):
         return res or self.parseString(inlines)
 
     def parseInlines(self, s, refmap={}):
-        """ Parse s as a list of inlines, using refmap to resolve references."""
+        """ Parse s as a list of inlines, using refmap to resolve
+        references."""
         self.subject = s
         self.pos = 0
         self.refmap = refmap
@@ -773,15 +827,19 @@ class DocParser:
 
     def acceptsLines(self, block_type):
         """ Returns true if block type can accept lines of text."""
-        return block_type == "Paragraph" or block_type == "IndentedCode" or block_type == "FencedCode"
+        return block_type == "Paragraph" or \
+            block_type == "IndentedCode" or \
+            block_type == "FencedCode"
 
     def endsWithBlankLine(self, block):
-        """ Returns true if block ends with a blank line, descending if needed
-        into lists and sublists."""
+        """ Returns true if block ends with a blank line,
+        descending if needed into lists and sublists."""
         if block.last_line_blank:
             return True
-        if (block.t == "List" or block.t == "ListItem") and len(block.children) > 0:
-            return self.endsWithBlankLine(block.children[len(block.children) - 1])
+        if (block.t == "List" or block.t == "ListItem") and \
+           len(block.children) > 0:
+            return self.endsWithBlankLine(
+                block.children[len(block.children) - 1])
         else:
             return False
 
@@ -819,7 +877,10 @@ class DocParser:
         """ Add block of type tag as a child of the tip.  If the tip can't
         accept children, close and finalize it and try its parent,
         and so on til we find a block that can accept children."""
-        while not (self.tip.t == "Document" or self.tip.t == "BlockQuote" or self.tip.t == "ListItem" or (self.tip.t == "List" and tag == "ListItem")):
+        while not (self.tip.t == "Document" or
+                   self.tip.t == "BlockQuote" or
+                   self.tip.t == "ListItem" or
+                   (self.tip.t == "List" and tag == "ListItem")):
             self.finalize(self.tip, line_number)
         column_number = offset + 1
         newBlock = Block.makeBlock(tag, line_number, column_number)
@@ -832,9 +893,12 @@ class DocParser:
         """ Returns true if the two list items are of the same type,
         with the same delimiter and bullet character.  This is used
         in agglomerating list items into lists."""
-        return (list_data.get("type", None) == item_data.get("type", None) and
-            list_data.get("delimiter", None) == item_data.get("delimiter", None) and
-            list_data.get("bullet_char", None) == item_data.get("bullet_char", None))
+        return (list_data.get("type", None) ==
+                item_data.get("type", None) and
+                list_data.get("delimiter", None) ==
+                item_data.get("delimiter", None) and
+                list_data.get("bullet_char", None) ==
+                item_data.get("bullet_char", None))
 
     def parseListMarker(self, ln, offset):
         """ Parse a list marker and return data on the marker (type,
@@ -871,6 +935,20 @@ class DocParser:
             elif match2:
                 data['padding'] = len(match2.group(0))
         return data
+
+    def parseIAL(self, ln):
+        values = []
+        css_class = re.findall(r"\.(\w+) *", ln)
+        if css_class:
+            values.append(("class", " ".join(css_class)))
+        css_id = re.findall(r"\#.(\w+) *", ln)
+        if css_id:
+            values.append(("id", css_id[0]))
+        keyed_values = re.findall(r"(\w+)(?:=(\w+))? *", ln)
+        if keyed_values:
+            values += keyed_values
+
+        return dict(values)
 
     def incorporateLine(self, ln, line_number):
         """ Analyze a line of text and update the document appropriately.
@@ -931,7 +1009,9 @@ class DocParser:
                     offset = first_nonspace
                 else:
                     all_matched = False
-            elif container.t in ["ATXHeader", "SetextHeader", "HorizontalRule"]:
+            elif container.t in ["ATXHeader",
+                                 "SetextHeader",
+                                 "HorizontalRule"]:
                 all_matched = False
             elif container.t == "FencedCode":
                 i = container.fence_offset
@@ -963,7 +1043,12 @@ class DocParser:
 
         if blank and container.last_line_blank:
             self.breakOutOfLists(container, line_number)
-        while not container.t == "FencedCode" and not container.t == "IndentedCode" and not container.t == "HtmlBlock" and not matchAt(r"^[ #`~*+_=<>0-9-]", ln, offset) is None:
+
+        while container.t != "ExtensionBlock" and \
+                container.t != "FencedCode" and \
+                container.t != "IndentedCode" and \
+                container.t != "HtmlBlock" and \
+                matchAt(r"^[ #`~*+_=<>0-9-{]", ln, offset) is not None:
             match = matchAt("[^ ]", ln, offset)
             if match is None:
                 first_nonspace = len(ln)
@@ -975,10 +1060,26 @@ class DocParser:
             FENmatch = re.search(
                 r"^`{3,}(?!.*`)|^~{3,}(?!.*~)", ln[first_nonspace:])
             PARmatch = re.search(r"^(?:=+|-+) *$", ln[first_nonspace:])
+            IALmatch = re.search(r"^{:((\}|[^}])*)} *$", ln[first_nonspace:])
+            EXTmatch = re.search(r"^{::((\\\}|[^\\}])*)/?} *$",
+                                 ln[first_nonspace:])
             data = self.parseListMarker(ln, first_nonspace)
 
             indent = first_nonspace - offset
-            if indent >= CODE_INDENT:
+            if data:
+                already_done, oldtip = closeUnmatchedBlocks(
+                    self, already_done, oldtip)
+                data['marker_offset'] = indent
+                offset = first_nonspace + data['padding']
+                if not container.t == "List" or not self.listsMatch(
+                   container.list_data, data):
+                    container = self.addChild(
+                        "List", line_number, first_nonspace)
+                    container.list_data = data
+                container = self.addChild(
+                    "ListItem", line_number, first_nonspace)
+                container.list_data = data
+            elif indent >= CODE_INDENT:
                 if not self.tip.t == "Paragraph" and not blank:
                     offset += CODE_INDENT
                     already_done, oldtip = closeUnmatchedBlocks(
@@ -997,6 +1098,38 @@ class DocParser:
                 already_done, oldtip = closeUnmatchedBlocks(
                     self, already_done, oldtip)
                 container = self.addChild("BlockQuote", line_number, offset)
+            elif EXTmatch:
+                args = EXTmatch.group(1)
+                keyed_values = re.findall(r"(\w+)(?:=(\w+))? *", args)
+                offset = first_nonspace + len(EXTmatch.group(0))
+                print("EXT {} {}".format(args, offset))
+                already_done, oldtip = closeUnmatchedBlocks(self,
+                                                            already_done,
+                                                            oldtip)
+                container = self.addChild("ExtensionBlock", line_number,
+                                          first_nonspace)
+                container.title = keyed_values.pop(0)[0]
+                container.attributes = dict(keyed_values)
+                print(EXTmatch.group(0))
+                print(args)
+                if (EXTmatch.group(0)[-2] == '/'):
+                    self.finalize(container, line_number)
+
+                break
+            elif IALmatch:
+                offset = first_nonspace + len(IALmatch.group(0))
+                print("Found {}".format(IALmatch.group(0)))
+                print("blank {}".format(blank))
+                print("container {} {}".format(
+                    self.tip.t,
+                    container.last_line_blank))
+                if blank:
+                    # FIXME
+                    # attributes.update(self.parseIAL(IALmatch.group(1)))
+                    pass
+                else:
+                    self.tip.attributes = self.parseIAL(IALmatch.group(1))
+                break
             elif ATXmatch:
                 offset = first_nonspace + len(ATXmatch.group(0))
                 already_done, oldtip = closeUnmatchedBlocks(
@@ -1028,7 +1161,8 @@ class DocParser:
                 container = self.addChild(
                     'HtmlBlock', line_number, first_nonspace)
                 break
-            elif container.t == "Paragraph" and len(container.strings) == 1 and PARmatch:
+            elif container.t == "Paragraph" and \
+                    len(container.strings) == 1 and PARmatch:
                 already_done, oldtip = closeUnmatchedBlocks(
                     self, already_done, oldtip)
                 container.t = "SetextHeader"
@@ -1041,19 +1175,6 @@ class DocParser:
                     "HorizontalRule", line_number, first_nonspace)
                 offset = len(ln) - 1
                 break
-            elif data:
-                already_done, oldtip = closeUnmatchedBlocks(
-                    self, already_done, oldtip)
-                data['marker_offset'] = indent
-                offset = first_nonspace + data['padding']
-                if not container.t == "List" or not self.listsMatch(
-                   container.list_data, data):
-                    container = self.addChild(
-                        "List", line_number, first_nonspace)
-                    container.list_data = data
-                container = self.addChild(
-                    "ListItem", line_number, first_nonspace)
-                container.list_data = data
             else:
                 break
             if self.acceptsLines(container.t):
@@ -1068,25 +1189,42 @@ class DocParser:
             blank = False
         indent = first_nonspace - offset
 
-        if not self.tip == last_matched_container and not blank and self.tip.t == "Paragraph" and len(self.tip.strings) > 0:
+        if not self.tip == last_matched_container and \
+           not blank and self.tip.t == "Paragraph" and \
+           len(self.tip.strings) > 0:
             self.last_line_blank = False
             self.addLine(ln, offset)
         else:
             already_done, oldtip = closeUnmatchedBlocks(
                 self, already_done, oldtip)
-            container.last_line_blank = blank and not (container.t == "BlockQuote" or container.t == "FencedCode" or (
-                container.t == "ListItem" and len(container.children) == 0 and container.start_line == line_number))
+            container.last_line_blank = \
+                blank and \
+                not (container.t == "BlockQuote" or
+                     container.t == "FencedCode" or
+                     (container.t == "ListItem" and
+                      len(container.children) == 0 and
+                      container.start_line == line_number))
             cont = container
             while cont.parent:
                 cont.parent.last_line_blank = False
                 cont = cont.parent
             if container.t == "IndentedCode" or container.t == "HtmlBlock":
                 self.addLine(ln, offset)
+            if container.t == "ExtensionBlock":
+                EXTmatch = re.search(r"^{:/((\\\}|[^\\}])*)} *$",
+                                     ln[first_nonspace:])
+                if EXTmatch:
+                    self.finalize(container, line_number)
+                else:
+                    self.addLine(ln, offset)
             elif container.t == "FencedCode":
                 match = bool()
                 if len(ln) > 0:
-                    match = len(ln) > first_nonspace and ln[first_nonspace] == container.fence_char and re.match(
-                        r"^(?:`{3,}|~{3,})(?= *$)", ln[first_nonspace:])
+                    match = len(ln) > first_nonspace and \
+                        ln[first_nonspace] == container.fence_char and \
+                        re.match(
+                            r"^(?:`{3,}|~{3,})(?= *$)",
+                            ln[first_nonspace:])
                 match = indent <= 3 and match
                 FENmatch = re.search(
                     r"^(?:`{3,}|~{3,})(?= *$)", ln[first_nonspace:])
@@ -1102,7 +1240,8 @@ class DocParser:
                     self.addLine(ln, first_nonspace)
                 elif blank:
                     pass
-                elif not container.t == "HorizontalRule" and not container.t == "SetextHeader":
+                elif container.t != "HorizontalRule" and \
+                        container.t != "SetextHeader":
                     container = self.addChild(
                         "Paragraph", line_number, first_nonspace)
                     self.addLine(ln, first_nonspace)
@@ -1241,9 +1380,23 @@ class HTMLRenderer(object):
         """ Escape href URLs."""
         if not re.search("mailto|MAILTO", s):
             if sys.version_info >= (3, 0):
-                return re.sub("[&](?![#](x[a-f0-9]{1,8}|[0-9]{1,8});|[a-z][a-z0-9]{1,31};)", "&amp;", HTMLquote(HTMLunescape(s), ":/=*%?&)(#"), re.IGNORECASE)
+                return re.sub(
+                    "[&](?![#](x[a-f0-9]{1,8}|[0-9]{1,8});" +
+                    "|[a-z][a-z0-9]{1,31};)",
+                    "&amp;",
+                    HTMLquote(
+                        HTMLunescape(s),
+                        ":/=*%?&)(#"),
+                    re.IGNORECASE)
             else:
-                return re.sub("[&](?![#](x[a-f0-9]{1,8}|[0-9]{1,8});|[a-z][a-z0-9]{1,31};)", "&amp;", HTMLquote(HTMLunescape(s).encode("utf-8"), ":/=*%?&)(#"), re.IGNORECASE)
+                return re.sub(
+                    "[&](?![#](x[a-f0-9]{1,8}|[0-9]{1,8});" +
+                    "|[a-z][a-z0-9]{1,31};)",
+                    "&amp;",
+                    HTMLquote(
+                        HTMLunescape(s).encode("utf-8"),
+                        ":/=*%?&)(#"),
+                    re.IGNORECASE)
         else:
             return s
 
