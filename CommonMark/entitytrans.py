@@ -1,5 +1,8 @@
 """
-Python 3.4 HTML5 entity unescaping for all! Based on https://hg.python.org/cpython/file/500d3d6f22ff/Lib/html/__init__.py
+Python 3.4 HTML5 entity unescaping for all!
+
+Based on
+https://hg.python.org/cpython/file/500d3d6f22ff/Lib/html/__init__.py
 """
 
 import sys
@@ -2278,7 +2281,7 @@ _invalid_charrefs = {
     0x9f: u'\u0178',  # LATIN CAPITAL LETTER Y WITH DIAERESIS
 }
 
-_invalid_codepoints = {
+_invalid_codepoints = set([
     # 0x0001 to 0x0008
     0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
     # 0x000E to 0x001F
@@ -2299,7 +2302,7 @@ _invalid_codepoints = {
     0x8fffe, 0x8ffff, 0x9fffe, 0x9ffff, 0xafffe, 0xaffff, 0xbfffe, 0xbffff,
     0xcfffe, 0xcffff, 0xdfffe, 0xdffff, 0xefffe, 0xeffff, 0xffffe, 0xfffff,
     0x10fffe, 0x10ffff
-}
+])
 
 
 def _replace_charref(s):
@@ -2317,9 +2320,9 @@ def _replace_charref(s):
         if num in _invalid_codepoints:
             return ''
         if sys.version_info >= (3, 0):
-        	return chr(num)
+            return chr(num)
         else:
-        	return unichr(num)
+            return unichr(num)  # noqa
     else:
         # named charref
         if s in _html5:
@@ -2335,6 +2338,7 @@ def _replace_charref(s):
 _charref = _re.compile(r'&(#[0-9]+;?'
                        r'|#[xX][0-9a-fA-F]+;?'
                        r'|[^\t\n\f <&#;]{1,32};?)')
+
 
 def _unescape(s):
     """
