@@ -22,13 +22,14 @@ to work (all tests pass on 2.7, 3.3, and 3.4).
 
 Installation
 ------------
-
+Prefered installation way is by using `pip <http://www.pip-installer.org/>`_:
 ::
 
-    rolands@kamaji:~$ pip install commonmark
+    pip install commonmark
 
 Usage
 -----
+In Python:
 
 ::
 
@@ -38,15 +39,17 @@ Usage
     ast = parser.parse("Hello *World*")
     html = renderer.render(ast)
     json = CommonMark.ASTtoJSON(ast)
-    CommonMark.dumpAST(ast) # pretty print generated AST structure
-    print(html) # <p>Hello <em>World</em><p/>
+    CommonMark.dumpAST(ast)  # pretty print generated AST structure
+    print(html)  # <p>Hello <em>World</em><p/>
 
-    ----- or -----
 
-    rolands@kamaji:~$ cmark.py README.md -o README.html
-    rolands@kamaji:~$ cmark.py README.md -o README.json -aj # output AST as JSON
-    rolands@kamaji:~$ cmark.py README.md -a # pretty print generated AST structure
-    rolands@kamaji:~$ cmark.py -h
+Or from the command line (be sure to have ``cmark.py`` in your path):
+
+::
+    cmark.py README.md -o README.html
+    cmark.py README.md -o README.json -aj  # output AST as JSON
+    cmark.py README.md -a  # pretty print generated AST structure
+    cmark.py -h
     usage: cmark.py [-h] [-o [O]] [-a] [-aj] [infile]
 
     Process Markdown according to the CommonMark specification.
@@ -73,19 +76,18 @@ a pull request adding your test to the existing test suite.
 
 Tests
 -----
+The tests script, ``CommonMark-tests.py``, is pretty much a devtool.
 
-The tests script, ``CommonMark-tests.py``, is pretty much a devtool. As
-well as running all the tests embeded in ``spec.txt`` it also allows you
-to run specific tests using the ``-t`` argument, provide information
-about passed tests with ``-p``, percentage passed by category of test
-with ``-s``, and enter markdown interactively with ``-i`` (In
-interactive mode end a block by inputing a line with just ``end``, to
-quit do the same but with ``quit``). ``-d`` can be used to print call
-tracing.
+- As well as running all the tests embeded in ``spec.txt``,
+- it also allows you to run specific tests using the ``-t`` argument,
+- provide information about passed tests with ``-p``,
+- percentage passed by category of test with ``-s``,
+- and enter markdown interactively with ``-i`` (In interactive mode end a block by inputing a line with just ``end``, to quit do the same but with ``quit``).
+- ``-d`` can be used to print call tracing.
 
 ::
 
-    rolands@kamaji:~/utils/CommonMark-py$ python CommonMark-tests.py -h
+    $ python CommonMark-tests.py -h
     usage: CommonMark-tests.py [-h] [-t T] [-p] [-f] [-i] [-d] [-np] [-s]
 
     script to run the CommonMark specification tests against the CommonMark.py
@@ -103,7 +105,6 @@ tracing.
 
 Authors
 -------
-
 -  `Bibek Kafle <https://github.com/kafle>`__
 -  `Roland Shoemaker <https://github.com/rolandshoemaker>`__
 
