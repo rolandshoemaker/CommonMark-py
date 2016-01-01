@@ -84,8 +84,10 @@ reMain = r"^(?:[\n`\[\]\\!<&*_]|[^\n`\[\]\\!<&*_]+)"
 
 # Utility functions
 
-def ASTtoJSON(block):
-    """ Output AST in JSON form, this is destructive of block."""
+def ASTtoJSON(iblock):
+    from copy import deepcopy
+    block=deepcopy(iblock) 
+    del deepcopy
     def prepare(block):
         """ Strips circular 'parent' references and trims empty block elements."""
         if block.parent:
