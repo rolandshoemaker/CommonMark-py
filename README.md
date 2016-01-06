@@ -1,3 +1,7 @@
+**Note:** This package is now being maintained here: https://github.com/rtfd/CommonMark-py
+
+-----------------------
+
 CommonMark-py
 =============
 
