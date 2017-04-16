@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # CommonMark.py - setup.py
 from distutils.core import setup
 
