@@ -18,5 +18,8 @@ jobs:
       python: pypy
     - arch: ppc64le
       python: pypy3
+    - arch: amd64
+      python: 3.3
+      
 # test command
 script: python setup.py install && python CommonMark/test/test-CommonMark.py -np && cmark.py README.md && cmark.py README.md -a && cmark.py README.md -aj
