@@ -1,9 +1,25 @@
 language: python
+arch:
+ - amd64
+ - ppc64le
+
 python:
   - "2.7"
   - "3.3"
   - "3.4"
   - "pypy"
   - "pypy3"
+ #Disable version 3.3, 3.2 & pypy
+jobs: 
+  exclude:
+    - arch: ppc64le
+      python: 3.3
+    - arch: ppc64le
+      python: pypy
+    - arch: ppc64le
+      python: pypy3
+    - arch: amd64
+      python: 3.3
+      
 # test command
 script: python setup.py install && python CommonMark/test/test-CommonMark.py -np && cmark.py README.md && cmark.py README.md -a && cmark.py README.md -aj
