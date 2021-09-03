@@ -75,11 +75,11 @@ Tests
 -----
 
 The tests script, ``CommonMark-tests.py``, is pretty much a devtool. As
-well as running all the tests embeded in ``spec.txt`` it also allows you
+well as running all the tests embedded in ``spec.txt`` it also allows you
 to run specific tests using the ``-t`` argument, provide information
 about passed tests with ``-p``, percentage passed by category of test
 with ``-s``, and enter markdown interactively with ``-i`` (In
-interactive mode end a block by inputing a line with just ``end``, to
+interactive mode end a block by inputting a line with just ``end``, to
 quit do the same but with ``quit``). ``-d`` can be used to print call
 tracing.
 
